@@ -11,16 +11,19 @@ Create a Conventional Commits message based on the current staged diff, then per
 
 ## Workflow
 
-1. Stage changes.
+1. Check for already-staged changes.
+   - Run `git diff --cached --name-status`.
+   - If staged files exist, skip staging and proceed to inspection/commit using the staged set.
+2. Stage changes when nothing is staged.
    - Run the staging script from this skill: `python3 <skill-root>/scripts/stage_changes.py`
    - The script stages tracked changes (`git add -u`) and selectively stages untracked files that are not ignored and not temporary.
    - If nothing is staged after running, stop and report that there are no relevant changes to commit.
 
-2. Inspect staged changes.
+3. Inspect staged changes.
    - Use `git diff --cached --name-status` to understand file-level changes.
    - Use `git diff --cached` to spot functional changes and key behaviors.
 
-3. Compose a Conventional Commits message.
+4. Compose a Conventional Commits message.
    - Format:
      - Title line: `type(scope): short summary`
      - Body: 2-6 bullet points, each starting with `- `, describing the most important changes.
@@ -34,7 +37,7 @@ Create a Conventional Commits message based on the current staged diff, then per
    - Choose `scope` from the most relevant top-level area (examples: `core`, `raftor`, `wal`, `rpc`, `tests`, `docs`, `build`). Omit scope if unclear.
    - Keep the summary under ~72 chars; avoid trailing period.
 
-4. Commit without prompting for confirmation.
+5. Commit without prompting for confirmation.
    - Use multi-line message via repeated `-m` flags, for example:
      - `git commit -m "type(scope): summary" -m "- bullet one" -m "- bullet two"`
 
