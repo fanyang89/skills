@@ -1,5 +1,5 @@
 ---
-name: git-commit-agent
+name: git-commit
 description: Generate Conventional Commits messages and run git add/git commit from current repo changes. Use when the user says "git commit" or asks to auto-stage changes and craft a commit message from the diff.
 ---
 
