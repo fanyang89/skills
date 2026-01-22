@@ -25,8 +25,8 @@ Reword the latest commit message safely, without unintentionally altering the co
    - Run `git log -1 --pretty=%B` for the full message when needed.
 
 4. Collect the new commit message from the user.
-   - Ask for a new subject and optional body lines.
-   - If the user requests Conventional Commits, format accordingly.
+   - Follow the commit message format and rules from the `git-commit` skill.
+   - Ask for the required parts (type/scope/summary, body bullets) as needed.
 
 5. Amend the commit message.
    - Use repeated `-m` flags:
