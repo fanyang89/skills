@@ -39,8 +39,9 @@ def run(cmd, capture=False):
     return subprocess.run(
         cmd,
         check=True,
-        text=True,
-        capture_output=capture,
+        universal_newlines=True,
+        stdout=subprocess.PIPE if capture else None,
+        stderr=subprocess.PIPE if capture else None,
     )
 
 
