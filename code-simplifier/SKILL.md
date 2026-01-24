@@ -1,6 +1,6 @@
 ---
 name: code-simplifier
-description: Simplify and refine code for clarity, consistency, and maintainability while preserving exact behavior; use after code changes to clean up recently modified sections, align with project standards (e.g., CLAUDE.md), and avoid unnecessary complexity.
+description: Simplify and refine code for clarity, consistency, and maintainability while preserving exact behavior; use after code changes to clean up recently modified sections, align with project standards (e.g., CLAUDE.md, AGENTS.md), and avoid unnecessary complexity.
 ---
 
 # Code Simplifier
@@ -8,7 +8,7 @@ description: Simplify and refine code for clarity, consistency, and maintainabil
 ## Workflow
 
 - Identify the recently modified code first (prefer `git diff` or files touched in this session).
-- Read project standards (e.g., `CLAUDE.md`) and follow them strictly.
+- Read project standards (e.g., `CLAUDE.md`, `AGENTS.md`) and follow them strictly.
 - Simplify structure and naming without changing behavior.
 - Keep scope to the modified sections unless explicitly asked to broaden it.
 
