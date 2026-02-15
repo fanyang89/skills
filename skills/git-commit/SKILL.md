@@ -24,22 +24,26 @@ Create a Conventional Commits message based on the current staged diff, then per
    - Use `git diff --cached` to spot functional changes and key behaviors.
 
 4. Compose a Conventional Commits message.
-   - Format:
-     - Title line: `type(scope): short summary`
-     - Body: 2-6 bullet points, each starting with `- `, describing the most important changes.
-   - Choose `type` by best fit:
-     - `feat`: new user-facing functionality
-     - `fix`: bug fixes or behavior corrections
-     - `refactor`: internal change without behavior change
-     - `docs`: documentation-only change
-     - `test`: tests-only change
-     - `build`, `ci`, `chore`, `perf`, `style`, `revert` as appropriate
-   - Choose `scope` from the most relevant top-level area (examples: `core`, `raftor`, `wal`, `rpc`, `tests`, `docs`, `build`). Omit scope if unclear.
-   - Keep the summary under ~72 chars; avoid trailing period.
+    - Format:
+      - Title line: `type(scope): short summary`
+      - Body: brief summary first, then 2-6 bullet points.
+      - Bullet lines must start with `- `.
+    - Choose `type` by best fit:
+      - `feat`: new user-facing functionality
+      - `fix`: bug fixes or behavior corrections
+      - `refactor`: internal change without behavior change
+      - `docs`: documentation-only change
+      - `test`: tests-only change
+      - `build`, `ci`, `chore`, `perf`, `style`, `revert` as appropriate
+    - Choose `scope` from the most relevant top-level area (examples: `core`, `raftor`, `wal`, `rpc`, `tests`, `docs`, `build`). Omit scope if unclear.
+    - Keep the title on one line and under 72 characters.
+    - Hard-wrap body text at column 72 using word boundaries.
+    - Avoid splitting words across lines and prefer wrapping at spaces.
+    - Avoid trailing period in the title summary.
 
 5. Commit without prompting for confirmation.
-   - Use multi-line message via repeated `-m` flags, for example:
-     - `git commit -m "type(scope): summary" -m "- bullet one" -m "- bullet two"`
+    - Use multi-line message via repeated `-m` flags, for example:
+      - `git commit -m "type(scope): summary" -m "Brief summary of why this change was made." -m "- bullet one" -m "- bullet two"`
 
 ## Notes
 
