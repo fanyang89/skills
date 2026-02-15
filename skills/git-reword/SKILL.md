@@ -28,14 +28,20 @@ Reword the latest commit message safely, without unintentionally altering the co
    - Follow the commit message format and rules from the `git-commit` skill.
    - Ask for the required parts (type/scope/summary, body bullets) as needed.
 
-5. Amend the commit message.
-   - Use repeated `-m` flags:
-     - `git commit --amend -m "<subject>" -m "<body line 1>" -m "<body line 2>"`
-   - If the user wants to edit in an editor instead, run `git commit --amend` without `-m`.
+5. Validate the new commit message.
+    - Run the validator from the `git-commit` skill before amend:
+      - `python3 <repo-root>/skills/git-commit/scripts/validate_commit_message.py --subject "<subject>" --body-line "<body line 1>" --body-line "<body line 2>"`
+    - If validation fails, regenerate/fix the message and validate again.
 
-6. If the commit was already pushed, warn before any push.
-   - Explain that rewriting history requires `git push --force-with-lease`.
-   - Do not push unless the user explicitly asks.
+6. Amend the commit message.
+    - Use repeated `-m` flags:
+      - `git commit --amend -m "<subject>" -m "<body line 1>" -m "<body line 2>"`
+    - Do not run `git commit --amend` without `-m` and do not open an
+      interactive editor for commit message entry.
+
+7. If the commit was already pushed, warn before any push.
+    - Explain that rewriting history requires `git push --force-with-lease`.
+    - Do not push unless the user explicitly asks.
 
 ## Notes
 

@@ -41,17 +41,28 @@ Create a Conventional Commits message based on the current staged diff, then per
     - Avoid splitting words across lines and prefer wrapping at spaces.
     - Avoid trailing period in the title summary.
 
-5. Commit without prompting for confirmation.
-    - Use multi-line message via repeated `-m` flags, for example:
+5. Validate the generated commit message.
+    - Run the validation script before committing:
+      - `python3 <skill-root>/scripts/validate_commit_message.py --subject "type(scope): summary" --body-line "Brief summary of why this change was made." --body-line "- bullet one" --body-line "- bullet two"`
+    - If validation fails, regenerate/fix the message and validate again.
+
+6. Commit without prompting for confirmation.
+    - Always use multi-line message via repeated `-m` flags, for example:
       - `git commit -m "type(scope): summary" -m "Brief summary of why this change was made." -m "- bullet one" -m "- bullet two"`
+    - Do not run `git commit` without `-m` and do not open an interactive
+      editor for commit message entry.
 
 ## Notes
 
 - Do not include obvious temporary or generated files (e.g., editor swap files, build outputs, caches).
 - Prefer clarity over cleverness in the summary and bullets; mention key files if it helps understanding.
+- Validation rejects paste artifacts (for example `[Pasted`, `[200~`,
+  `[201~`), ANSI escape sequences, and control characters in the message.
 
 ## Resources
 
 ### scripts/
 
 - `stage_changes.py`: stage tracked changes and select untracked files while skipping temp-like paths.
+- `validate_commit_message.py`: validate generated subject/body lines and fail
+  fast on malformed or polluted message content.
