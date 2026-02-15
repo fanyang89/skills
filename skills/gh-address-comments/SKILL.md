@@ -17,12 +17,13 @@ Prereq: ensure `gh` is authenticated (for example, run `gh auth login` once), th
   - Skip resolved review threads
   - Skip top-level conversation comments authored by bots
 
-## 2) Ask the user for clarification
-- Number all the review threads and comments and provide a short summary of what would be required to apply a fix for it
-- Ask the user which numbered comments should be addressed in this round
+## 2) Plan this round automatically
+- Number all the review threads and comments and provide a short summary of what would be required to apply each fix
+- By default, address all unresolved comments in this round without asking the user to choose
+- Ask the user only when there is a hard blocker or a risky product decision that cannot be inferred
 
-## 3) If user chooses comments
-- Apply fixes for the selected comments
+## 3) Apply fixes
+- Apply fixes for all comments selected by the default rule
 - In iterative review loops, do not post thread replies by default
 - Report what was changed and which thread IDs are likely addressed
 
