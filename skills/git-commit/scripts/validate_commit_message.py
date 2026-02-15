@@ -12,6 +12,7 @@ PASTE_MARKERS = (
 
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+ESCAPED_SEQUENCE_RE = re.compile(r"\\[nrt]")
 
 
 def find_issues(label: str, text: str, check_width: bool) -> list[str]:
@@ -27,6 +28,12 @@ def find_issues(label: str, text: str, check_width: bool) -> list[str]:
 
     if CONTROL_CHAR_RE.search(text):
         issues.append(f"{label} contains control character")
+
+    escaped_match = ESCAPED_SEQUENCE_RE.search(text)
+    if escaped_match:
+        issues.append(
+            f"{label} contains escaped sequence '{escaped_match.group(0)}'"
+        )
 
     if check_width and text and len(text) > 72:
         issues.append(f"{label} exceeds 72 columns ({len(text)})")
