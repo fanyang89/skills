@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "external_directory": {
+      "~/go/**": "allow",
+      "~/.codex/skills": "allow"
+    },
+    "edit": {
+      "~/go/**": "deny",
+      "~/.codex/skills": "deny"
+    }
+  }
+}
