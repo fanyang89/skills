@@ -5,13 +5,12 @@
       "/private/tmp/**": "allow",
       "/tmp/**": "allow",
       "~/go/**": "allow",
-      "~/.codex/skills": "allow"
+      "~/.config/opencode": "allow"
     },
     "edit": {
       "/private/tmp/**": "allow",
       "/tmp/**": "allow",
-      "~/go/**": "deny",
-      "~/.codex/skills": "deny"
+      "~/go/**": "deny"
     }
   }
 }
