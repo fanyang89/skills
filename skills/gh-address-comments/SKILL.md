@@ -20,6 +20,12 @@ Prereq: ensure `gh` is authenticated (for example, run `gh auth login` once), th
 
 ## 3) If user chooses comments
 - Apply fixes for the selected comments
+- Draft each PR reply in a heredoc or file and validate before posting:
+  - `python3 <skill-root>/scripts/validate_reply_body.py --body-file <path>`
+  - or `python3 <skill-root>/scripts/validate_reply_body.py --body-file -`
+- Post validated replies with `gh` using `--body-file` to preserve newlines
+  and avoid literal escape sequences (for example `\\n`)
 
 Notes:
 - If gh hits auth/rate issues mid-run, prompt the user to re-authenticate with `gh auth login`, then retry.
+- Do not post reply text that fails validation.
