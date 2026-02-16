@@ -24,6 +24,13 @@ Prereq: ensure `gh` is authenticated (for example, run `gh auth login` once), th
 
 ## 3) Apply fixes
 - Apply fixes for all comments selected by the default rule
+- When committing during this workflow, invoke the `git-commit` skill rather than composing `git commit` commands ad hoc.
+- If a commit is needed, follow the commit format from `git-commit` skill:
+  - Use a Conventional Commit subject (`type(scope): summary`)
+  - Validate message text first:
+    - `python3 <repo-root>/skills/git-commit/scripts/validate_commit_message.py --subject "<subject>" --body-line "<line>"`
+  - Commit with repeated `-m` flags (one per paragraph/line)
+  - Never embed literal `\\n` escapes in a single `-m` string
 - In iterative review loops, do not post thread replies by default
 - Report what was changed and which thread IDs are likely addressed
 

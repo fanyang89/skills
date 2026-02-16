@@ -6,6 +6,8 @@ When creating a commit message, wrap text at column 72 using word boundaries.
 - Body text: hard-wrap at column 72.
 - Body structure: write a brief summary first, then use bullet points.
 - Bullets: use `- ` prefixes and keep each bullet focused.
+- When committing from CLI, pass subject/body with repeated `-m` flags.
+- Do not put escaped newlines (for example `\\n`) in commit text.
 - Do not split a word across lines.
 - Prefer wrapping at spaces so each line remains readable.
 
