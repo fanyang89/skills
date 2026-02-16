@@ -31,6 +31,8 @@ Prereq: ensure `gh` is authenticated (for example, run `gh auth login` once), th
 - Draft each PR reply in a heredoc or file and validate before posting:
   - `python3 <skill-root>/scripts/validate_reply_body.py --body-file <path>`
   - or `python3 <skill-root>/scripts/validate_reply_body.py --body-file -`
+- Write replies in reviewer-facing language (for example: "Thanks, addressed in the latest patch" and what changed).
+- Do not paste git commit messages into PR replies (for example: imperative summary + bullet list changelog format).
 - Post validated replies with `gh` using `--body-file` to preserve newlines
   and avoid literal escape sequences (for example `\\n`)
 
