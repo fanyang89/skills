@@ -45,6 +45,8 @@ Create a Conventional Commits message based on the current staged diff, then per
     - Run the validation script before committing:
       - `python3 <skill-root>/scripts/validate_commit_message.py --subject "type(scope): summary" --body-line "Brief summary of why this change was made." --body-line "- bullet one" --body-line "- bullet two"`
     - If validation fails, regenerate/fix the message and validate again.
+    - Treat escaped control tokens as hard failures (for example `\\n`, `\\r`, `\\t`).
+    - Treat body-structure hints as warnings; prefer fixing them before commit.
 
 6. Commit without prompting for confirmation.
     - Always use multi-line message via repeated `-m` flags, for example:
@@ -57,7 +59,8 @@ Create a Conventional Commits message based on the current staged diff, then per
 - Do not include obvious temporary or generated files (e.g., editor swap files, build outputs, caches).
 - Prefer clarity over cleverness in the summary and bullets; mention key files if it helps understanding.
 - Validation rejects paste artifacts (for example `[Pasted`, `[200~`,
-  `[201~`), ANSI escape sequences, and control characters in the message.
+  `[201~`), ANSI escape sequences, control characters, and escaped control
+  tokens in the message.
 
 ## Resources
 

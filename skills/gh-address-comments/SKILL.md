@@ -30,7 +30,8 @@ Prereq: ensure `gh` is authenticated (for example, run `gh auth login` once), th
   - Validate message text first:
     - `python3 <repo-root>/skills/git-commit/scripts/validate_commit_message.py --subject "<subject>" --body-line "<line>"`
   - Commit with repeated `-m` flags (one per paragraph/line)
-  - Never embed literal `\\n` escapes in a single `-m` string
+  - Never embed literal escaped control tokens (for example `\\n`, `\\r`,
+    `\\t`) in commit text
 - In iterative review loops, do not post thread replies by default
 - Report what was changed and which thread IDs are likely addressed
 

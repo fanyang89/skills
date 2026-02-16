@@ -2,22 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
+from pathlib import Path
 import re
 import shlex
 import subprocess
 import sys
 import textwrap
+from types import ModuleType
 
-PASTE_MARKERS = (
-    "[pasted",
-    "pasted ~",
-    "[200~",
-    "[201~",
-)
-
-ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
-CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
-ESCAPED_SEQUENCE_RE = re.compile(r"\\[nrt]")
 BULLET_PREFIX_RE = re.compile(r"^[-*•]\s+(.*)$")
 
 
@@ -37,149 +30,112 @@ def _git_ok(*args: str) -> bool:
     return _run(["git", *args], check=False).returncode == 0
 
 
+def _load_validator_module() -> ModuleType:
+    validator_path = (
+        Path(__file__).resolve().parents[2]
+        / "git-commit"
+        / "scripts"
+        / "validate_commit_message.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "shared_commit_validator",
+        validator_path,
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"unable to load validator: {validator_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+VALIDATOR = _load_validator_module()
+PASTE_MARKERS = getattr(VALIDATOR, "PASTE_MARKERS")
+CONVENTIONAL_SUBJECT_RE = getattr(VALIDATOR, "CONVENTIONAL_SUBJECT_RE")
+
+
+def _validate_message(subject: str, body_lines: list[str]) -> tuple[list[str], list[str]]:
+    return VALIDATOR.validate_commit_message(subject, body_lines)
+
+
 def _normalize_spaces(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def _split_message(raw_message: str) -> tuple[str, str]:
-    lines = raw_message.splitlines()
+def _split_message(raw_message: str) -> tuple[str, list[str]]:
+    lines = raw_message.replace("\r\n", "\n").split("\n")
+    while lines and not lines[0].strip():
+        lines.pop(0)
     if not lines:
-        return "", ""
+        return "", []
 
-    first_non_empty = 0
-    while first_non_empty < len(lines) and not lines[first_non_empty].strip():
-        first_non_empty += 1
-
-    if first_non_empty >= len(lines):
-        return "", ""
-
-    subject = lines[first_non_empty].strip()
-    body = "\n".join(lines[first_non_empty + 1 :]).strip("\n")
-    return subject, body
+    subject = lines[0].strip()
+    body_lines = lines[1:]
+    while body_lines and not body_lines[-1].strip():
+        body_lines.pop()
+    return subject, body_lines
 
 
-def _find_line_issues(label: str, text: str, check_width: bool) -> list[str]:
-    issues: list[str] = []
-    lowered = text.lower()
-
-    for marker in PASTE_MARKERS:
-        if marker in lowered:
-            issues.append(f"{label} contains paste marker '{marker}'")
-
-    if ANSI_ESCAPE_RE.search(text):
-        issues.append(f"{label} contains ANSI escape sequence")
-
-    if CONTROL_CHAR_RE.search(text):
-        issues.append(f"{label} contains control character")
-
-    escaped = sorted(set(ESCAPED_SEQUENCE_RE.findall(text)))
-    if escaped:
-        joined = ", ".join(f"'{item}'" for item in escaped)
-        issues.append(f"{label} contains escaped sequence {joined}")
-
-    if check_width and text and len(text) > 72:
-        issues.append(f"{label} exceeds 72 columns ({len(text)})")
-
-    return issues
+def _extract_paragraphs(lines: list[str]) -> list[list[str]]:
+    paragraphs: list[list[str]] = []
+    current: list[str] = []
+    for line in lines:
+        if line.strip():
+            current.append(line)
+            continue
+        if current:
+            paragraphs.append(current)
+            current = []
+    if current:
+        paragraphs.append(current)
+    return paragraphs
 
 
-def _validate_structure(body: str) -> list[str]:
-    issues: list[str] = []
-    if not body.strip():
-        issues.append("body is required and must include summary + bullet list")
-        return issues
+def _normalize_subject(subject: str) -> str:
+    cleaned = _normalize_spaces(subject)
+    if CONVENTIONAL_SUBJECT_RE.match(cleaned):
+        if len(cleaned) <= 72:
+            return cleaned
+        return textwrap.shorten(cleaned, width=72, placeholder="...")
 
-    paragraphs = [
-        paragraph.strip()
-        for paragraph in re.split(r"\n\s*\n", body.strip())
-        if paragraph.strip()
-    ]
-    if len(paragraphs) < 2:
-        issues.append("body must contain a summary paragraph followed by bullets")
-        return issues
+    tail = cleaned
+    if ":" in cleaned:
+        tail = cleaned.split(":", 1)[1].strip() or cleaned
+    tail = re.sub(r"^[^A-Za-z0-9]+", "", tail)
+    tail = textwrap.shorten(tail, width=58, placeholder="...")
+    if not tail:
+        tail = "reword malformed commit message"
 
-    summary_lines = [line.strip() for line in paragraphs[0].splitlines() if line.strip()]
-    if not summary_lines:
-        issues.append("summary paragraph is empty")
-    elif all(line.startswith("- ") for line in summary_lines):
-        issues.append("summary paragraph must not be a bullet list")
-
-    bullet_lines: list[str] = []
-    for paragraph in paragraphs[1:]:
-        for line in paragraph.splitlines():
-            stripped = line.strip()
-            if not stripped:
-                continue
-            bullet_lines.append(stripped)
-            if not stripped.startswith("- ") and not line.startswith("  "):
-                issues.append(
-                    "all lines after summary must be bullets or wrapped bullet lines"
-                )
-
-    if not bullet_lines:
-        issues.append("at least one bullet is required after the summary")
-
-    return issues
+    candidate = f"chore: {tail}"
+    if len(candidate) > 72:
+        candidate = textwrap.shorten(candidate, width=72, placeholder="...")
+    return candidate
 
 
-def validate_commit_message(subject: str, body: str) -> list[str]:
-    issues: list[str] = []
-    if not subject:
-        return ["subject is empty"]
-
-    if "\n" in subject or "\r" in subject:
-        issues.append("subject must be a single line")
-    issues.extend(_find_line_issues("subject", subject, check_width=True))
-
-    for index, line in enumerate(body.splitlines(), start=1):
-        issues.extend(
-            _find_line_issues(
-                f"body line {index}",
-                line,
-                check_width=bool(line.strip()),
-            )
-        )
-
-    issues.extend(_validate_structure(body))
-    return issues
-
-
-def _extract_paragraphs(text: str) -> list[str]:
-    return [
-        paragraph.strip()
-        for paragraph in re.split(r"\n\s*\n", text.strip())
-        if paragraph.strip()
-    ]
-
-
-def _build_candidate(raw_message: str) -> tuple[str, str, str, str]:
+def _build_candidate(raw_message: str) -> tuple[str, str, str, list[str]]:
     normalized = raw_message.replace("\r\n", "\n")
-    normalized = normalized.replace("\\n", "\n").replace("\\t", " ")
+    normalized = normalized.replace("\\n", "\n").replace("\\r", "\n")
+    normalized = normalized.replace("\\t", " ")
 
     for marker in PASTE_MARKERS:
         normalized = re.sub(re.escape(marker), "", normalized, flags=re.IGNORECASE)
 
-    subject, body = _split_message(normalized)
-    subject = _normalize_spaces(subject)
-    if not subject:
-        subject = "chore: reword malformed commit message"
-    if len(subject) > 72:
-        subject = textwrap.shorten(subject, width=72, placeholder="...")
+    subject, body_lines = _split_message(normalized)
+    subject = _normalize_subject(subject)
 
-    paragraphs = _extract_paragraphs(body)
+    paragraphs = _extract_paragraphs(body_lines)
     prose_paragraphs: list[str] = []
     bullets: list[str] = []
 
     for paragraph in paragraphs:
-        lines = [line.strip() for line in paragraph.splitlines() if line.strip()]
         prose_lines: list[str] = []
-
-        for line in lines:
-            bullet_match = BULLET_PREFIX_RE.match(line)
+        for line in paragraph:
+            stripped = line.strip()
+            bullet_match = BULLET_PREFIX_RE.match(stripped)
             if bullet_match:
                 bullets.append(_normalize_spaces(bullet_match.group(1)))
             else:
-                prose_lines.append(line)
+                prose_lines.append(stripped)
 
         if prose_lines:
             prose_paragraphs.append(_normalize_spaces(" ".join(prose_lines)))
@@ -192,8 +148,8 @@ def _build_candidate(raw_message: str) -> tuple[str, str, str, str]:
     summary_paragraph = textwrap.fill(summary_source, width=72)
 
     if not bullets:
-        for extra in prose_paragraphs[1:]:
-            for sentence in re.split(r"(?<=[.!?])\s+", extra):
+        for prose in prose_paragraphs[1:]:
+            for sentence in re.split(r"(?<=[.!?])\s+", prose):
                 cleaned = _normalize_spaces(sentence.strip("- "))
                 if cleaned:
                     bullets.append(cleaned)
@@ -202,8 +158,8 @@ def _build_candidate(raw_message: str) -> tuple[str, str, str, str]:
 
     if not bullets:
         bullets = [
-            "Align message structure with the repository commit policy.",
-            "Use wrapped body text and explicit bullet points.",
+            "Align message formatting with shared commit policy.",
+            "Use repeated -m flags and avoid escaped newline tokens.",
         ]
 
     deduped: list[str] = []
@@ -212,13 +168,13 @@ def _build_candidate(raw_message: str) -> tuple[str, str, str, str]:
         cleaned = _normalize_spaces(bullet)
         if not cleaned:
             continue
-        key = cleaned.lower()
-        if key in seen:
+        lowered = cleaned.lower()
+        if lowered in seen:
             continue
-        seen.add(key)
+        seen.add(lowered)
         deduped.append(cleaned)
 
-    wrapped_lines: list[str] = []
+    wrapped_bullet_lines: list[str] = []
     for bullet in deduped[:6]:
         wrapped = textwrap.fill(
             bullet,
@@ -226,11 +182,11 @@ def _build_candidate(raw_message: str) -> tuple[str, str, str, str]:
             initial_indent="- ",
             subsequent_indent="  ",
         )
-        wrapped_lines.extend(wrapped.splitlines())
+        wrapped_bullet_lines.extend(wrapped.splitlines())
 
-    bullet_paragraph = "\n".join(wrapped_lines)
-    body_text = f"{summary_paragraph}\n\n{bullet_paragraph}".strip()
-    return subject, summary_paragraph, bullet_paragraph, body_text
+    bullet_paragraph = "\n".join(wrapped_bullet_lines)
+    body_lines_candidate = summary_paragraph.splitlines() + [""] + wrapped_bullet_lines
+    return subject, summary_paragraph, bullet_paragraph, body_lines_candidate
 
 
 def _resolve_base_ref(explicit_base: str | None) -> str:
@@ -268,39 +224,44 @@ def _get_message(commit_sha: str) -> str:
     return _git_output("show", "-s", "--format=%B", commit_sha)
 
 
-def _check_commits(base_ref: str) -> tuple[list[str], list[tuple[str, str, list[str]]]]:
+def _check_commits(
+    base_ref: str,
+) -> tuple[list[str], list[tuple[str, str, list[str], list[str]]]]:
     commits = _get_commits(base_ref)
-    invalid: list[tuple[str, str, list[str]]] = []
+    invalid: list[tuple[str, str, list[str], list[str]]] = []
 
     for sha in commits:
         raw = _get_message(sha)
-        subject, body = _split_message(raw)
-        issues = validate_commit_message(subject, body)
-        if issues:
-            invalid.append((sha, subject or "<empty>", issues))
+        subject, body_lines = _split_message(raw)
+        errors, warnings = _validate_message(subject, body_lines)
+        if errors:
+            invalid.append((sha, subject or "<empty>", errors, warnings))
 
     return commits, invalid
 
 
 def _fix_current_head() -> int:
-    current_sha = _git_output("rev-parse", "--short", "HEAD").strip()
+    short_sha = _git_output("rev-parse", "--short", "HEAD").strip()
     raw = _get_message("HEAD")
-    subject, body = _split_message(raw)
-    issues = validate_commit_message(subject, body)
+    subject, body_lines = _split_message(raw)
+    errors, warnings = _validate_message(subject, body_lines)
 
-    if not issues:
-        print(f"[{current_sha}] commit message already valid")
+    if not errors:
+        print(f"[{short_sha}] commit message already valid")
+        if warnings:
+            for warning in warnings:
+                print(f"[{short_sha}] warning: {warning}")
         return 0
 
-    print(f"[{current_sha}] invalid commit message; rewording")
-    for issue in issues:
+    print(f"[{short_sha}] invalid commit message; rewording")
+    for issue in errors:
         print(f"- {issue}")
 
-    new_subject, new_summary, new_bullets, new_body = _build_candidate(raw)
-    candidate_issues = validate_commit_message(new_subject, new_body)
-    if candidate_issues:
-        print(f"[{current_sha}] unable to build valid replacement", file=sys.stderr)
-        for issue in candidate_issues:
+    new_subject, new_summary, new_bullets, new_body_lines = _build_candidate(raw)
+    new_errors, _ = _validate_message(new_subject, new_body_lines)
+    if new_errors:
+        print(f"[{short_sha}] unable to build valid replacement", file=sys.stderr)
+        for issue in new_errors:
             print(f"- {issue}", file=sys.stderr)
         return 2
 
@@ -317,18 +278,16 @@ def _fix_current_head() -> int:
             new_bullets,
         ]
     )
-    print(f"[{current_sha}] amended")
+    print(f"[{short_sha}] amended")
     return 0
 
 
 def _has_local_changes() -> bool:
-    status = _git_output("status", "--porcelain")
-    return bool(status.strip())
+    return bool(_git_output("status", "--porcelain").strip())
 
 
 def _has_merge_commits(base_ref: str) -> bool:
-    merges = _git_output("rev-list", "--merges", f"{base_ref}..HEAD")
-    return bool(merges.strip())
+    return bool(_git_output("rev-list", "--merges", f"{base_ref}..HEAD").strip())
 
 
 def _apply_reword(base_ref: str) -> int:
@@ -342,8 +301,8 @@ def _apply_reword(base_ref: str) -> int:
 
     if _has_merge_commits(base_ref):
         print(
-            "merge commits detected in range; automatic non-interactive reword "
-            "only supports linear commit ranges",
+            "merge commits detected in range; automatic reword only supports "
+            "linear commit ranges",
             file=sys.stderr,
         )
         return 5
@@ -415,10 +374,12 @@ def main() -> int:
         return 0
 
     print(f"found {len(invalid)} invalid commit message(s):")
-    for sha, subject, issues in invalid:
+    for sha, subject, errors, warnings in invalid:
         print(f"- {sha[:12]} {subject}")
-        for issue in issues:
+        for issue in errors:
             print(f"  - {issue}")
+        for warning in warnings:
+            print(f"  - warning: {warning}")
 
     if not args.apply:
         print("\nre-run with --apply to auto-reword invalid commits")
@@ -428,19 +389,21 @@ def main() -> int:
     if apply_result != 0:
         return apply_result
 
-    commits_after, invalid_after = _check_commits(base_ref)
+    _, invalid_after = _check_commits(base_ref)
     if invalid_after:
         print(
             f"rewording finished but {len(invalid_after)} invalid commit(s) remain",
             file=sys.stderr,
         )
-        for sha, subject, issues in invalid_after:
+        for sha, subject, errors, warnings in invalid_after:
             print(f"- {sha[:12]} {subject}", file=sys.stderr)
-            for issue in issues:
+            for issue in errors:
                 print(f"  - {issue}", file=sys.stderr)
+            for warning in warnings:
+                print(f"  - warning: {warning}", file=sys.stderr)
         return 7
 
-    print(f"all {len(commits_after)} commit messages are now valid")
+    print("all commit messages are now valid")
     return 0
 
 

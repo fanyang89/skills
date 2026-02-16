@@ -29,9 +29,11 @@ Reword the latest commit message safely, without unintentionally altering the co
    - Ask for the required parts (type/scope/summary, body bullets) as needed.
 
 5. Validate the new commit message.
-    - Run the validator from the `git-commit` skill before amend:
-      - `python3 <repo-root>/skills/git-commit/scripts/validate_commit_message.py --subject "<subject>" --body-line "<body line 1>" --body-line "<body line 2>"`
-    - If validation fails, regenerate/fix the message and validate again.
+     - Run the validator from the `git-commit` skill before amend:
+       - `python3 <repo-root>/skills/git-commit/scripts/validate_commit_message.py --subject "<subject>" --body-line "<body line 1>" --body-line "<body line 2>"`
+     - If validation fails, regenerate/fix the message and validate again.
+     - Escaped control tokens (for example `\\n`, `\\r`, `\\t`) are hard
+       failures and must be removed before amend.
 
 6. Amend the commit message.
     - Use repeated `-m` flags:

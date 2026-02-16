@@ -22,10 +22,13 @@ layout, or lines wider than 72 columns).
 2. Check all commit messages in the range.
    - Run:
      - `python3 <skill-root>/scripts/check_and_reword_pr_commits.py`
-   - The script validates each commit against policy:
+   - The script reuses the shared `git-commit` validator and applies the same
+     policy everywhere:
      - subject must be one line and <= 72 chars;
-     - body must include summary paragraph + bullet list;
-     - no paste artifacts, ANSI/control chars, or escaped sequences.
+     - subject must follow Conventional Commits format;
+     - no paste artifacts, ANSI/control chars, or escaped control tokens
+       (`\\n`, `\\r`, `\\t`).
+   - Body-structure hints remain warnings (recommended but not blocking).
 
 3. Reword invalid commits when needed.
    - Run:
