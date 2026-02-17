@@ -8,8 +8,8 @@ description: Check all commit messages in the current PR range and reword invali
 ## Goal
 
 Validate commit messages in the current PR range (`base..HEAD`) and reword
-malformed commits automatically (for example, literal `\\n`, missing bullet
-layout, or lines wider than 72 columns).
+malformed commits automatically (for example, literal `\\n`, non-Conventional
+subjects, or lines wider than 72 columns).
 
 ## Workflow
 
@@ -37,7 +37,8 @@ layout, or lines wider than 72 columns).
      - validates all commits in `base..HEAD`;
      - detects malformed text patterns (for example `\\n`);
      - runs non-interactive `git rebase --exec`;
-     - amends only invalid commits with repeated `-m` flags.
+     - amends only invalid commits with repeated `-m` flags (one per
+       paragraph, with contiguous bullet items in one bullet-block paragraph).
 
 4. Verify the final commit messages.
    - Run:

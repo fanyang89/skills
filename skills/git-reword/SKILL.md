@@ -36,8 +36,18 @@ Reword the latest commit message safely, without unintentionally altering the co
        failures and must be removed before amend.
 
 6. Amend the commit message.
-    - Use repeated `-m` flags:
-      - `git commit --amend -m "<subject>" -m "<body line 1>" -m "<body line 2>"`
+    - Use repeated `-m` flags with one paragraph per flag.
+    - Use one `-m` for the subject, one for the summary paragraph, and one for
+      the full bullet block.
+    - Keep bullet items contiguous in the bullet-block paragraph (no blank
+      lines between bullet items).
+    - Example:
+      ```bash
+      git commit --amend -m "<subject>" \
+        -m "<summary paragraph>" \
+        -m "- bullet one
+- bullet two"
+      ```
     - Do not run `git commit --amend` without `-m` and do not open an
       interactive editor for commit message entry.
 
@@ -47,5 +57,5 @@ Reword the latest commit message safely, without unintentionally altering the co
 
 ## Notes
 
-- Keep the subject under ~72 characters when possible.
+- Keep the subject on one line and under 72 characters.
 - Avoid amending if the user is unsure about staged changes; resolve staging first.

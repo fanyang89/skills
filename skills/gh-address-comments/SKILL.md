@@ -29,7 +29,10 @@ Prereq: ensure `gh` is authenticated (for example, run `gh auth login` once), th
   - Use a Conventional Commit subject (`type(scope): summary`)
   - Validate message text first:
     - `python3 <repo-root>/skills/git-commit/scripts/validate_commit_message.py --subject "<subject>" --body-line "<line>"`
-  - Commit with repeated `-m` flags (one per paragraph/line)
+  - Commit with repeated `-m` flags (one per paragraph: subject, summary,
+    bullet block)
+  - Keep bullet items contiguous in the bullet-block paragraph (no blank lines
+    between bullet items)
   - Never embed literal escaped control tokens (for example `\\n`, `\\r`,
     `\\t`) in commit text
 - In iterative review loops, do not post thread replies by default

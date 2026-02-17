@@ -94,6 +94,32 @@ def _body_structure_warnings(body_lines: list[str]) -> list[str]:
     return warnings
 
 
+def _body_structure_issues(body_lines: list[str]) -> list[str]:
+    issues: list[str] = []
+
+    for index, line in enumerate(body_lines):
+        if not line.strip().startswith("- "):
+            continue
+
+        lookahead = index + 1
+        saw_blank = False
+        while lookahead < len(body_lines) and not body_lines[lookahead].strip():
+            saw_blank = True
+            lookahead += 1
+
+        if not saw_blank or lookahead >= len(body_lines):
+            continue
+
+        if body_lines[lookahead].strip().startswith("- "):
+            issues.append(
+                "body bullets must be contiguous; do not separate bullet items "
+                "with blank lines"
+            )
+            break
+
+    return issues
+
+
 def validate_commit_message(
     subject: str,
     body_lines: list[str],
@@ -116,6 +142,8 @@ def validate_commit_message(
         issues.extend(
             find_issues(f"body line {index}", line, check_width=bool(line.strip()))
         )
+
+    issues.extend(_body_structure_issues(body_lines))
 
     warnings.extend(_body_structure_warnings(body_lines))
     return issues, warnings

@@ -24,9 +24,10 @@ Create a Conventional Commits message based on the current staged diff, then per
    - Use `git diff --cached` to spot functional changes and key behaviors.
 
 4. Compose a Conventional Commits message.
+    - Follow repository policy in `AGENTS.md` and enforce it with `scripts/validate_commit_message.py`.
     - Format:
       - Title line: `type(scope): short summary`
-      - Body: brief summary first, then 2-6 bullet points.
+      - Body: prefer a brief summary first, then 1-6 bullet points.
       - Bullet lines must start with `- `.
     - Choose `type` by best fit:
       - `feat`: new user-facing functionality
@@ -49,23 +50,29 @@ Create a Conventional Commits message based on the current staged diff, then per
     - Treat body-structure hints as warnings; prefer fixing them before commit.
 
 6. Commit without prompting for confirmation.
-    - Always use multi-line message via repeated `-m` flags, for example:
-      - `git commit -m "type(scope): summary" -m "Brief summary of why this change was made." -m "- bullet one" -m "- bullet two"`
-    - Do not run `git commit` without `-m` and do not open an interactive
-      editor for commit message entry.
+    - Always use repeated `-m` flags with one paragraph per flag.
+    - Use one `-m` for the subject, one for the summary paragraph, and one for
+      the full bullet block.
+    - Keep bullet items contiguous inside the bullet-block paragraph (no blank
+      lines between bullet items).
+    - Example:
+      ```bash
+      git commit -m "type(scope): summary" \
+        -m "Brief summary of why this change was made." \
+        -m "- bullet one
+- bullet two"
+      ```
+    - Do not run `git commit` without `-m` and do not open an interactive editor for commit message entry.
 
 ## Notes
 
 - Do not include obvious temporary or generated files (e.g., editor swap files, build outputs, caches).
 - Prefer clarity over cleverness in the summary and bullets; mention key files if it helps understanding.
-- Validation rejects paste artifacts (for example `[Pasted`, `[200~`,
-  `[201~`), ANSI escape sequences, control characters, and escaped control
-  tokens in the message.
+- Validation rejects paste artifacts (for example `[Pasted`, `[200~`, `[201~`), ANSI escape sequences, control characters, and escaped control tokens in the message.
 
 ## Resources
 
 ### scripts/
 
 - `stage_changes.py`: stage tracked changes and select untracked files while skipping temp-like paths.
-- `validate_commit_message.py`: validate generated subject/body lines and fail
-  fast on malformed or polluted message content.
+- `validate_commit_message.py`: validate generated subject/body lines and fail fast on malformed or polluted message content.
