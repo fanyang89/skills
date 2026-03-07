@@ -5,12 +5,14 @@
       "/private/tmp/**": "allow",
       "/tmp/**": "allow",
       "~/go/**": "allow",
+      "~/.cargo/**": "allow",
       "~/.config/opencode": "allow"
     },
     "edit": {
       "/private/tmp/**": "allow",
       "/tmp/**": "allow",
-      "~/go/**": "deny"
+      "~/go/**": "deny",
+      "~/.cargo/**": "deny"
     }
   }
 }
