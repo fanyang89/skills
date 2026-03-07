@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "external_directory": {
+      "/private/tmp/**": "allow",
+      "/tmp/**": "allow",
+      "~/go/**": "allow",
+      "~/.config/opencode": "allow"
+    },
+    "edit": {
+      "/private/tmp/**": "allow",
+      "/tmp/**": "allow",
+      "~/go/**": "deny"
+    }
+  }
+}
