@@ -57,10 +57,7 @@ Create a Conventional Commits message based on the current staged diff, then per
       lines between bullet items).
     - Example:
       ```bash
-      git commit -m "type(scope): summary" \
-        -m "Brief summary of why this change was made." \
-        -m "- bullet one
-- bullet two"
+      git commit -m "type(scope): summary\n\nBrief summary of why this change was made.\n- bullet one\n- bullet two"
       ```
     - Do not run `git commit` without `-m` and do not open an interactive editor for commit message entry.
 
