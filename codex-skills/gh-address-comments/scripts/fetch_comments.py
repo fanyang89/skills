@@ -44,7 +44,10 @@ query(
           body
           createdAt
           updatedAt
-          author { login }
+          author {
+            login
+            __typename
+          }
         }
       }
 
@@ -56,7 +59,10 @@ query(
           state
           body
           submittedAt
-          author { login }
+          author {
+            login
+            __typename
+          }
         }
       }
 
@@ -81,7 +87,10 @@ query(
               body
               createdAt
               updatedAt
-              author { login }
+              author {
+                login
+                __typename
+              }
             }
           }
         }
@@ -167,6 +176,13 @@ def gh_api_graphql(
     return _run_json(cmd, stdin=QUERY)
 
 
+def _is_bot_author(node: dict[str, Any]) -> bool:
+    author = node.get("author") or {}
+    login = (author.get("login") or "").lower()
+    typename = author.get("__typename")
+    return typename == "Bot" or login.endswith("[bot]")
+
+
 def fetch_all(owner: str, repo: str, number: int) -> dict[str, Any]:
     conversation_comments: list[dict[str, Any]] = []
     reviews: list[dict[str, Any]] = []
@@ -217,12 +233,27 @@ def fetch_all(owner: str, repo: str, number: int) -> dict[str, Any]:
         if not (comments_cursor or reviews_cursor or threads_cursor):
             break
 
+    filtered_conversation_comments = [
+        comment for comment in conversation_comments if not _is_bot_author(comment)
+    ]
+    filtered_review_threads = [
+        thread for thread in review_threads if not thread.get("isResolved", False)
+    ]
+
     assert pr_meta is not None
     return {
         "pull_request": pr_meta,
-        "conversation_comments": conversation_comments,
+        "conversation_comments": filtered_conversation_comments,
         "reviews": reviews,
-        "review_threads": review_threads,
+        "review_threads": filtered_review_threads,
+        "filters": {
+            "conversation_comments_removed_bot": (
+                len(conversation_comments) - len(filtered_conversation_comments)
+            ),
+            "review_threads_removed_resolved": (
+                len(review_threads) - len(filtered_review_threads)
+            ),
+        },
     }
 
 
